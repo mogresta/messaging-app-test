@@ -1,3 +1,6 @@
+# modified the specification to include error responses,
+# page and limit query parameters are now listed
+# messages/send is now post route with modified parameters
 openapi: 3.0.0
 info:
   title: Messages API
@@ -17,6 +20,22 @@ paths:
             enum:
               - "sent"
               - "read"
+              - "draft"
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
       responses:
         '200':
           description: Successful response
@@ -39,6 +58,7 @@ paths:
                           enum:
                             - "sent"
                             - "read"
+                            - "draft"
               example:
                 messages:
                   - text: "Hello, World!"
@@ -47,16 +67,51 @@ paths:
                     status: "sent"
                   - text: "Thanks, I'm fine. How about you?"
                     status: "sent"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /messages/send:
-    get:
+    post:
       summary: Send a Message
-      parameters:
-        - name: text
-          in: query
-          description: The text you want to send
-          required: true
-          schema:
-            type: "string"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  maxLength: 2000
+                  minLength: 1
       responses:
         '204':
           description: Successfully sent
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
